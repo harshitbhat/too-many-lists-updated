@@ -36,16 +36,22 @@ pub enum List {
 ```text
 > cargo build
 
-error[E0072]: recursive type `first::List` has infinite size
- --> src/first.rs:4:1
+error[E0072]: recursive type `List` has infinite size
+ --> src/first.rs:1:1
   |
-4 | pub enum List {
-  | ^^^^^^^^^^^^^ recursive type has infinite size
-5 |     Empty,
-6 |     Elem(i32, List),
+1 | pub enum List {
+  | ^^^^^^^^^^^^^
+2 |     Empty,
+3 |     Elem(i32, List),
   |               ---- recursive without indirection
   |
-  = help: insert indirection (e.g., a `Box`, `Rc`, or `&`) at some point to make `first::List` representable
+help: insert some indirection (e.g., a `Box`, `Rc`, or `&`) to break the cycle
+  |
+3 |     Elem(i32, Box<List>),
+  |               ++++    +
+
+For more information about this error, try `rustc --explain E0072`.
+error: could not compile `linked-list` (lib) due to 1 previous error
 ```
 
 Well. I don't know about you, but I certainly feel betrayed by the functional
@@ -248,6 +254,44 @@ the null pointer optimization kicks in, which *eliminates the space needed for
 the tag*. If the variant is A, the whole enum is set to all `0`'s. Otherwise,
 the variant is B. This works because B can never be all `0`'s, since it contains
 a non-zero pointer. Slick!
+
+> ### Null Pointer Optimization (NPO) in Rust
+> Every enum normally needs a tag — a few bits stored alongside the data that say "which variant is this?". NPO lets the compiler skip that tag entirely by stealing the meaning from a pointer's null value.
+> NPO kicks in when an enum has exactly two variants, where:
+> - One variant is "empty" (representable as all-zero bits)
+> - The other contains a type with a guaranteed non-null pointer (like `Box<T>`)
+>
+> Since a Box<T> can never be null, the compiler reasons:
+> - If all bits are zero → must be the empty variant
+> - If pointer bits are non-zero → must be the other variant
+> - No separate tag needed — the pointer is the tag
+>
+> #### First enum — NPO applies ✅
+> ```rust,ignore
+> pub enum List {
+>   Empty,                    // variant 1: no data
+>   Elem(i32, Box<List>),     // variant 2: has a Box (non-null ptr)
+> }
+> ```
+>
+> #### Second enum — NPO does NOT apply ❌
+> ```rust,ignore
+> pub enum List {
+>   Empty,
+>   ElemThenEmpty(i32),              // only an i32, no pointer
+>   ElemThenNotEmpty(i32, Box<List>),
+> }
+> ```
+> Three variants. NPO is binary: null vs. non-null. With 3 variants, you need to distinguish 3 states. 
+>
+> A pointer can't do that alone. An explicit tag field is required:
+> ```text
+> Tag=0  →  Empty
+> Tag=1  →  ElemThenEmpty(i32)
+> Tag=2  →  ElemThenNotEmpty(i32, Box<List>)
+> ```
+> The tag takes extra bytes, and the enum must be sized for the largest variant (`ElemThenNotEmpty`) plus the tag.
+
 
 Can you think of other enums and types that could do this kind of optimization?
 There's actually a lot! This is why Rust leaves enum layout totally unspecified.

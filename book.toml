@@ -1,6 +1,6 @@
 [book]
 title = "Learning Rust With Entirely Too Many Linked Lists"
-author = "Aria Desires"
+authors = ["Aria Desires", "Harshit Bhat"]
 description = "Learning Rust With Entirely Too Many Linked Lists"
 
 [build]
