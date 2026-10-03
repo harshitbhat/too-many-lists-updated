@@ -180,7 +180,7 @@ pub fn pop(&mut self) -> Option<i32> {
 > ```rust,ignore
 > match option {
 >     None => None,
->    Some(x) => Some(y),   // y is computed from x
+>     Some(x) => Some(y),   // y is computed from x
 > }
 > ```
 >

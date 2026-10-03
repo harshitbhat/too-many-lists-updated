@@ -415,6 +415,56 @@ warning: field is never used: `next`
 
 ```
 
+> #### privacy and encapsulation
+>
+> fixing a "private type in public interface" error (E0446).
+>
+> In Rust, when you make an `enum` public (`pub enum List`), all of its variants and their contents automatically become public too.
+>
+> ```rust,ignore
+> struct Node { // <-- PRIVATE
+>    elem: i32,
+>    next: List,
+> }
+>
+> pub enum List { // <-- PUBLIC
+>    Empty,
+>    More(Box<Node>), // ERROR: Exposes the private 'Node' type!
+> }
+> ```
+>
+> Because `List` is public, anyone using your library can see and access `List::More(Box<Node>)`. However, `Node` is a private struct. The compiler blocks this because a user would see that `More` requires a `Node`, but they wouldn't have the permissions to construct, name, or interact with a `Node`.
+>
+> To fix this, you need to hide the implementation details (`Node` and the `enum` variants) from the user, while still giving them a public type they can interact with.
+>
+> ```rust,ignore
+> pub struct List { // <-- PUBLIC
+>    head: Link,   // Private field (only accessible inside this module)
+> }
+>
+> enum Link {       // <-- PRIVATE
+>    Empty,
+>    More(Box<Node>),
+> }
+> 
+> struct Node {     // <-- PRIVATE
+>    elem: i32,
+>    next: Link,
+> }
+> ```
+>
+> By introducing `pub struct List` and renaming the enum to `Link` (which is now private), you create an opaque type.
+> - The user can create and pass around a `List`.
+> - They cannot look inside the `List` to see the `head` field.
+> - Because they can't see `head`, they don't need to know about the `Link` enum or the `Node` struct.
+> - The compiler is satisfied because no private types are leaking into the public API.
+>
+> **TLDR**
+>
+> In Rust, privacy rules apply differently to structs and enums:
+> - **Structs default to private fields**: A `pub struct` hides its contents. You have to explicitly opt-in by writing `pub` on each individual field.
+> - **Enums default to public variants**: A `pub enum` exposes everything inside it automatically. There is no way to make a single variant or its data private if the enum itself is public.
+
 Alright, that compiled! Rust is pretty mad, because as far as it can tell,
 everything we've written is totally useless: we never use `head`, and no one who
 uses our library can either since it's private. Transitively, that means Link

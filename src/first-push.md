@@ -115,7 +115,7 @@ But hey, that's `push` all done! Probably. We should probably test it, honestly.
 Right now the easiest way to do that is probably to write `pop`, and make sure
 that it produces the right results.
 
-> When we have &mut self, we are holding a mutable borrow, not the ownership.
+> When we have `&mut self`, we are holding a **mutable borrow**, not the ownership.
 >
 > **Validity Invariant**: Every value must be in a valid state at every point in the program. A struct with a field, `head: Link` means that the field must always contain a valid `Link`, never an uninitialized, never a hole, even temporarily.
 >
@@ -125,7 +125,7 @@ that it produces the right results.
 >
 > So rather than taking anything out, we swap it. So the variable is never empty.
 >
-> The swap operation, "take the old thing andput a placeholder in, at the exact time", is exactly what `std::mem::replace` does
+> The swap operation, "take the old thing and put a placeholder in, at the exact time", is exactly what `std::mem::replace` does
 >
 > ```rust,ignore
 > let new_node = Box::new(Node {

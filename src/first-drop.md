@@ -32,6 +32,7 @@ hitch.
 The automatic handling is going to be bad.
 
 > **Why do we normally not need to write `Drop`?**
+> 
 > `List` only _contains_ other things (`Link`, which contains `Box<Node>`, which contains `Node`...).
 > Each of those already knows how to clean itself up, so Rust generates the drop code for `List` for us.
 > "drop every field, one after another".
@@ -48,6 +49,7 @@ which will try to drop C. Some of you might rightly be getting nervous. This is
 recursive code, and recursive code can blow the stack!
 
 > **Picture it as a chain of people holding hands.**
+> 
 > `list` can't let go until A has let go, A can't finish until B has, and B can't finish until C has.
 >
 > Every _"I'm waiting for the next one"_ is a function call sitting on the **stack**, and the stack is small (a few MB).

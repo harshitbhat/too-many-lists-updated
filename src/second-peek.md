@@ -197,6 +197,7 @@ error[E0384]: cannot assign twice to immutable variable `value`
 The compiler is complaining that `value` is immutable, but we pretty clearly wrote `&mut value`; what gives? It turns out that writing the argument of the closure that way doesn't specify that `value` is a mutable reference. Instead, it creates a pattern that will be matched against the argument to the closure; `|&mut value|` means "the argument is a mutable reference, but just copy the value it points to into `value`, please." If we just use `|value|`, the type of `value` will be `&mut i32` and we can actually mutate the head:
 
 > **closure parameters are patterns**
+>
 > In Rust, the thing between the `|...|` (or in a `let`, or a `match` arm) isn't just a variable name. It's a **pattern** that gets matched against the incoming argument, and it can destructure it.
 >
 > We've seen this with match:
@@ -215,7 +216,10 @@ The compiler is complaining that `value` is immutable, but we pretty clearly wro
 > | Pattern    | "the incoming value is a mutable reference; strip it off and bind what's inside" |
 >
 > **What the test was doing**
-> `peek_mut()` returns `Option<&mut i32>`. So the closure receives an argument of type `&mut i32`.
+>
+> `peek_mut()` returns `Option<&mut i32>`. 
+>
+> So the closure receives an argument of type `&mut i32`.
 >
 > ```rust,ignore
 > list.peek_mut().map(|&mut value| {
@@ -225,7 +229,7 @@ The compiler is complaining that `value` is immutable, but we pretty clearly wro
 >
 > Here `|&mut value|` is a pattern. Rust reads it as:
 >
-> > "The argument is a &mut i32. Take the i32 it points to, copy it into a new variable called value."
+> > "The argument is a `&mut i32`. Take the `i32` it points to, copy it into a new variable called `value`."
 > > So `value` is not a reference at all. It's a plain `i32`, a copy, and it's not declared mut. That's why the compiler says `value` is immutable. The confusing part is that the error is about the local `value`, not about the reference you thought you had.
 >
 > Even if you added `mut` and made it compile, you'd only be changing your local copy. The list would be unchanged.
