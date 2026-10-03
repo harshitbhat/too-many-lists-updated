@@ -254,7 +254,10 @@ impl<T> Iterator for Iter<T> {
 We need to add lifetimes only in function and type signatures:
 
 ```rust ,ignore
+// This Iter struct holds a reference to a Node. Let's call the region of code where that Node is valid 'a.
 // Iter is generic over *some* lifetime, it doesn't care
+// A struct isn't allowed to outlive the references it contains. 
+// If the Iter didn't have this tag, you could theoretically keep the Iter around after the Node it points to is deleted from memory (a "use-after-free" bug).
 pub struct Iter<'a, T> {
     next: Option<&'a Node<T>>,
 }
@@ -460,6 +463,23 @@ borrow checker to ensure we never mess up pointers!
 But in this case the closure in conjunction with the fact that we
 have an `Option<&T>` instead of `&T` is a bit too complicated for it to work
 out, so we need to help it by being explicit. Thankfully this is pretty rare, in my experience.
+
+> **`as_deref`
+> 
+> At their core, `as_deref` and `as_deref_mut` are convenience methods on `Option` (and `Result`) that combine borrowing and dereferencing into a single, clean step.
+> 
+> They exist to solve a specific friction point in Rust: moving from an `Option` containing an owned smart pointer (like `String`, `Box<T>`, or `Vec<T>`) to an `Option` containing a borrowed reference to the underlying data (like `&str`, `&T`, or `&[T]`).
+> 
+> ```rust,ignore
+> // The pre-1.40 way
+> let borrowed_node = node.next.as_ref().map(|n| &**n);
+> ```
+>
+> Here is what `&**n` is doing step-by-step:
+> - `n` is a `&Box<Node>` (because `as_ref()` borrowed the Option).
+> - The first `*` dereferences the reference, leaving a `Box<Node>`.
+> - The second `*`` triggers the `Deref` trait on `Box`, digging through the heap pointer to get the actual `Node`.
+> - The `&` at the front borrows that actual `Node` again, creating the `&Node` we wanted.
 
 Just for completeness' sake, we *could* give it a *different* hint with the *turbofish*:
 
